@@ -1,0 +1,12 @@
+# Render.com Blueprint — deploys the WebSocket multiplayer server.
+# Create a new "Blueprint" service on Render and point it at this repo,
+# or create a Web Service manually with: Build = `npm install`, Start = `npm start`.
+services:
+  - type: web
+    name: voxel-cs-server
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
