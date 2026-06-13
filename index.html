@@ -206,6 +206,12 @@ const WEAPONS = {
 const COLORS = {
   T: 0xff8c1a, CT: 0x4d8cff,
 };
+// ============== MULTIPLAYER SERVER URL ==============
+// To enable online play, paste your deployed Render server URL here.
+// It MUST start with wss:// (secure) when the game is served over https (GitHub Pages).
+// Example: 'wss://voxel-strike-server.onrender.com'
+const ONLINE_SERVER = 'wss://voxel-strike.onrender.com';
+// ===================================================
 const CONFIG = {
   gravity: 22, jump: 8.2, moveSpeed: 5.6, walkSpeed: 2.7, crouchSpeed: 2.2,
   eyeHeight: 1.7, crouchHeight: 1.0, playerRadius: 0.35,
@@ -1437,7 +1443,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-campaign').onclick=()=>{ ensureAudio(); startGame('campaign'); };
   document.getElementById('btn-practice').onclick=()=>{ ensureAudio(); startGame('practice'); };
   document.getElementById('btn-online').onclick=()=>{
-    const url=prompt('Server URL:', 'wss://your-game.onrender.com');
+    const url=prompt('Server URL:', ONLINE_SERVER);
     if(url) connectServer(url);
   };
 });
