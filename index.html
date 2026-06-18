@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>VOXEL STRIKE — Voxel CS</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #6ab0d8; font-family: 'Segoe UI', Arial, sans-serif; }
@@ -163,7 +164,7 @@
 </div></div>
 
 <!-- ===== Overlays ===== -->
-<div class="overlay" id="death"><h1>YOU DIED</h1><h2 id="death-sub">Spectating… respawn next round</h2></div>
+<div class="overlay" id="death"><h1>YOU DIED</h1><h2 id="death-sub">Spectating… respawn next round</h2><button class="btn" id="btn-respawn" style="margin-top:24px;">RESPAWN</button></div>
 <div class="overlay" id="roundresult"><h1 id="rr-title">ROUND OVER</h1><h2 id="rr-sub"></h2></div>
 <div class="overlay" id="reconnect"><h1>Reconnecting…</h1><h2>Lost connection to server</h2></div>
 
@@ -469,6 +470,7 @@ function resetPlayerForRound(){
   p.reloading=false; p.scoped=false;
   p.hasBomb = (p.team==='T');
   document.getElementById('death').style.display='none';
+  const rb=document.getElementById('btn-respawn'); if(rb) rb.style.display='none';
 }
 
 // collision: resolve player AABB against colliders
@@ -940,10 +942,44 @@ function flashDamage(){ const f=document.getElementById('flash'); f.style.backgr
 function playerDie(by){
   const p=G.player; p.alive=false; p.deaths++;
   dropWeapon(p.pos.clone(), p.inv.primary);
-  document.getElementById('death-sub').textContent = 'Killed by '+by+' · respawn next round';
+  const sub=document.getElementById('death-sub');
+  const btn=document.getElementById('btn-respawn');
+  // tailor the death screen to the mode
+  if(G.mode==='practice'){ sub.textContent='Killed by '+by; btn.textContent='RESPAWN'; btn.style.display='block'; }
+  else if(G.mode==='campaign'){ sub.textContent='Killed by '+by+' · restart this wave'; btn.textContent='RETRY WAVE'; btn.style.display='block'; }
+  else { sub.textContent='Killed by '+by+' · start a new round'; btn.textContent='RESPAWN (NEW ROUND)'; btn.style.display='block'; }
   document.getElementById('death').style.display='flex';
+  document.exitPointerLock&&document.exitPointerLock();
   addKill(by, 'You', 'rifle', false);
   checkRoundEnd();
+}
+
+function respawn(){
+  const p=G.player;
+  document.getElementById('death').style.display='none';
+  if(G.mode==='practice'){
+    // free roam: just revive in place at spawn, full health & ammo
+    p.alive=true; p.health=100;
+    p.pos.set(0, CONFIG.eyeHeight, p.team==='T'?-34:34);
+    p.vel.set(0,0,0); p.reloading=false; p.scoped=false; applyScope();
+    for(const k in WEAPONS){ if(p.ammo[k]){ p.ammo[k].mag=WEAPONS[k].mag; p.ammo[k].res=WEAPONS[k].reserve; } }
+    updateHUD();
+    if(G.started){ G.renderer.domElement.requestPointerLock&&G.renderer.domElement.requestPointerLock(); }
+  } else if(G.mode==='campaign'){
+    // restart the current wave fresh
+    G.round.phase='live';
+    resetPlayerForRound();
+    p.money = Math.max(p.money, 4000);
+    spawnWave(G.campaign.wave);
+    toast('WAVE '+G.campaign.wave+' — retry');
+    updateHUD();
+    if(G.started){ G.renderer.domElement.requestPointerLock&&G.renderer.domElement.requestPointerLock(); }
+  } else {
+    // bots/online: kick off a fresh round
+    if(G.mode==='online' && G.net){ resetPlayerForRound(); updateHUD(); }
+    else { G.round.phase='over'; startRound(); }
+    if(G.started){ G.renderer.domElement.requestPointerLock&&G.renderer.domElement.requestPointerLock(); }
+  }
 }
 
 // ============================================================ HUD
@@ -1442,6 +1478,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btn-bots').onclick=()=>{ ensureAudio(); startGame('bots'); };
   document.getElementById('btn-campaign').onclick=()=>{ ensureAudio(); startGame('campaign'); };
   document.getElementById('btn-practice').onclick=()=>{ ensureAudio(); startGame('practice'); };
+  document.getElementById('btn-respawn').onclick=()=>{ ensureAudio(); respawn(); };
   document.getElementById('btn-online').onclick=()=>{
     const url=prompt('Server URL:', ONLINE_SERVER);
     if(url) connectServer(url);
